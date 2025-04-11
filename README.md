@@ -78,7 +78,7 @@ artifacts/
     └── text_section.bin               # Raw extracted .text section shellcode
 ``` 
 
-##🔒 Ethical Use Only
+## 🔒 Ethical Use Only
 
 This tool is provided strictly for ethical hacking, research, and red team training purposes.
 Do not use EVADE-R on systems or networks you do not own or have explicit permission to test.
@@ -86,7 +86,7 @@ Do not use EVADE-R on systems or networks you do not own or have explicit permis
 The creator assumes **no** responsibility for illegal or malicious use.
 
 
-###🧙 Author
+### 🧙 Author
 
 
-Made with blood, bytes, and broken detections by Aidan Ahern
+  Made with blood, bytes, and broken detections by Aidan Ahern
