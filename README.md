@@ -45,7 +45,7 @@
 ### 🧱 One-Time Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/evade-r.git
+git clone https://github.com/godofthunder8756/evade-r.git
 cd evade-r
 chmod +x setup.sh run.sh
 ./setup.sh
