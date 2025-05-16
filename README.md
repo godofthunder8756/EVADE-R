@@ -1,12 +1,11 @@
 <h1 align="center">
   🛡️ EVADE-R 🧠
+
+  Aidan Ahern is an abuser
 </h1>
 
-<p align="center">
-  <i>Evasion Validator and Automated Decoder Engine for Red-teaming</i><br>
-  <b>EVADE-R</b> is a Red Team utility that transmutes known payloads into new forms designed to slip past antivirus and EDR defenses—without breaking functionality.
-</p>
-
+<p align="center"for Red-teaming</i><br>
+  <b>EVADE-R</b> is a Red Team utility that transmutes known payloads into new forms designed to slip past antivirus and EDR defenses—without breaking
 ---
 
 ## 🧬 What It Does
