@@ -116,6 +116,10 @@ Available options:
   --no-interactive      Run in non-interactive mode with defaults
 ```
 
+Environment variable:
+
+- `EVADE_R_ARCH` (x86/x64) sets the default architecture for raw shellcode runs in `main.py` when stdin is non-interactive.
+
 ### Examples
 
 ```bash
