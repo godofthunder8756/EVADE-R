@@ -45,7 +45,7 @@ def obf_exe(path: Path):
     # Detect x86 vs x64
     pe = lief.PE.parse(str(path))
     if pe is None:
-        sys.exit(f"[!] Unable to parse PE: {path}")
+        sys.exit(f"[!] Unable to parse PE file - ensure the file is a valid Windows executable: {path}")
     machine = pe.header.machine
     if   machine == lief.PE.Header.MACHINE_TYPES.AMD64:
         compiler, arch_s = 'x86_64-w64-mingw32-gcc', 'x64'

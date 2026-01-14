@@ -219,7 +219,7 @@ def obf_exe(payload_path: Path, choice: str = "1", custom_output: Path = None):
     
     pe = lief.PE.parse(str(payload_path))
     if pe is None:
-        sys.exit(f"[!] Unable to parse PE: {payload_path}")
+        sys.exit(f"[!] Unable to parse PE file - ensure the file is a valid Windows executable: {payload_path}")
     m = pe.header.machine
     if m == lief.PE.Header.MACHINE_TYPES.AMD64:
         compiler = "x86_64-w64-mingw32-gcc"
@@ -390,7 +390,7 @@ def main():
     else:
         # Run msfvenom command
         if args.no_interactive and not args.command:
-            sys.exit("[!] Non-interactive mode requires --command or --input.")
+            sys.exit("[!] Non-interactive mode requires --command or --input to be set.")
         if args.command:
             cmd = args.command
         else:
