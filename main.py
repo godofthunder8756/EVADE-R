@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import os, sys, random, subprocess
+import os
+import random
+import subprocess
+import sys
 from pathlib import Path
 
 import lief
