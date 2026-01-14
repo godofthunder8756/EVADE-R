@@ -390,7 +390,7 @@ def main():
     else:
         # Run msfvenom command
         if args.no_interactive and not args.command:
-            sys.exit("[!] Non-interactive mode requires --command or --input to be set.")
+            sys.exit("[!] Non-interactive mode without --input requires --command.")
         if args.command:
             cmd = args.command
         else:
