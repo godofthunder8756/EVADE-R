@@ -76,9 +76,11 @@ def obf_shellcode(path: Path):
     bytestr = to_c_array(raw)
     filled  = stub.replace('PAYLOAD_BYTES', bytestr)
 
-    arch = os.environ.get("EVADE_R_ARCH", "").strip().lower()
+    arch_env = os.environ.get("EVADE_R_ARCH", "").strip().lower()
     if not sys.stdin.isatty():
-        arch = arch if arch in ("x86", "x64") else "x64"
+        arch = arch_env if arch_env in ("x86", "x64") else "x64"
+    else:
+        arch = arch_env
     while arch not in ('x86','x64'):
         arch = input("Architecture (x86/x64): ").strip().lower()
     compiler = 'x86_64-w64-mingw32-gcc' if arch=='x64' else 'i686-w64-mingw32-gcc'

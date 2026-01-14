@@ -447,10 +447,10 @@ def main():
             print("3. Rolling XOR")
             choice = input(f"Enter choice [1-3] (default {default_choice}): ").strip() or default_choice
         
-        arch = args.arch or ""
         if args.no_interactive:
-            arch = arch or "x64"  # Default to x64 in non-interactive mode
+            arch = args.arch or "x64"  # Default to x64 in non-interactive mode
         else:
+            arch = args.arch or ""
             while arch not in ("x86", "x64"):
                 arch = input("Architecture (x86/x64): ").strip().lower()
                 
