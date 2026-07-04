@@ -218,6 +218,8 @@ def obf_exe(payload_path: Path, choice: str = "1", custom_output: Path = None):
     data = payload_path.read_bytes()
     
     pe = lief.PE.parse(str(payload_path))
+    if pe is None:
+        sys.exit(f"[!] Unable to parse PE file - ensure the file is a valid Windows executable: {payload_path}")
     m = pe.header.machine
     if m == lief.PE.Header.MACHINE_TYPES.AMD64:
         compiler = "x86_64-w64-mingw32-gcc"
@@ -363,10 +365,13 @@ def obf_shellcode(bin_path: Path, choice: str = "1", arch: str = "x64", custom_o
 def parse_args():
     parser = argparse.ArgumentParser(description="EVADE-R: MSFVenom Payload Obfuscator")
     parser.add_argument("-c", "--command", help="MSFVenom command to run")
-    parser.add_argument("-i", "--input", help="Use existing payload file instead of generating new one")
-    parser.add_argument("-o", "--output", help="Output filename")
+    parser.add_argument("-i", "--input", type=Path,
+                       help="Use existing payload file instead of generating new one")
+    parser.add_argument("-o", "--output", type=Path, help="Output filename")
     parser.add_argument("-e", "--encoder", type=int, choices=[1, 2, 3], 
                        help="Obfuscation method (1=XOR, 2=Rolling XOR, 3=ROT)")
+    parser.add_argument("--arch", choices=["x86", "x64"],
+                       help="Shellcode architecture (x86/x64)")
     parser.add_argument("--cleanup", action="store_true", 
                        help="Remove original payload file after obfuscation")
     parser.add_argument("--no-interactive", action="store_true", 
@@ -379,11 +384,13 @@ def main():
     
     # Get the payload file
     if args.input:
-        out_file = Path(args.input)
+        out_file = args.input
         if not out_file.exists():
             sys.exit(f"[!] Input file not found: {out_file}")
     else:
         # Run msfvenom command
+        if args.no_interactive and not args.command:
+            sys.exit("[!] Non-interactive mode without --input requires --command.")
         if args.command:
             cmd = args.command
         else:
@@ -395,11 +402,11 @@ def main():
         if not cmd.startswith("msfvenom"):
             cmd = "msfvenom " + cmd
 
-        print(f"[*] Running: {cmd}")
-        subprocess.run(cmd, shell=True, check=True)
+        cmd_args = shlex.split(cmd)
+        print(f"[*] Running: {' '.join(cmd_args)}")
+        subprocess.run(cmd_args, check=True)
 
         # Extract output file from command
-        cmd_args = shlex.split(cmd)
         try:
             o = cmd_args.index("-o")
             out_file = Path(cmd_args[o+1])
@@ -410,44 +417,40 @@ def main():
             sys.exit(f"[!] Output file not found: {out_file}")
 
     # Determine output path
-    custom_output = None
-    if args.output:
-        custom_output = Path(args.output)
+    custom_output = args.output
     
     # Process based on file type
     if out_file.suffix.lower() == ".exe":
         # Pre-select encoder if specified
-        if args.no_interactive and args.encoder:
-            choice = str(args.encoder)
-        elif args.no_interactive:
-            choice = "1"  # Default to simple XOR in non-interactive mode
+        default_choice = str(args.encoder) if args.encoder else "1"
+        if args.no_interactive:
+            choice = default_choice
         else:
             # Ask user which obfuscation technique to use in interactive mode
             print("\nSelect obfuscation technique:")
             print("1. Simple XOR (default)")
             print("2. Rolling XOR (better evasion)")
             print("3. ROT encoding")
-            choice = input("Enter choice [1-3]: ").strip() or "1"
+            choice = input(f"Enter choice [1-3] (default {default_choice}): ").strip() or default_choice
         
         final = obf_exe(out_file, choice, custom_output)
     else:
         # Pre-select encoder if specified
-        if args.no_interactive and args.encoder:
-            choice = str(args.encoder)
-        elif args.no_interactive:
-            choice = "1"  # Default to no encoding in non-interactive mode
+        default_choice = str(args.encoder) if args.encoder else "1"
+        if args.no_interactive:
+            choice = default_choice
         else:
             # Ask user which obfuscation technique to use in interactive mode
             print("\nSelect obfuscation technique for shellcode:")
             print("1. No encoding (default)")
             print("2. XOR encoding")
             print("3. Rolling XOR")
-            choice = input("Enter choice [1-3]: ").strip() or "1"
+            choice = input(f"Enter choice [1-3] (default {default_choice}): ").strip() or default_choice
         
         if args.no_interactive:
-            arch = "x64"  # Default to x64 in non-interactive mode
+            arch = args.arch or "x64"  # Default to x64 in non-interactive mode
         else:
-            arch = ""
+            arch = args.arch or ""
             while arch not in ("x86", "x64"):
                 arch = input("Architecture (x86/x64): ").strip().lower()
                 

